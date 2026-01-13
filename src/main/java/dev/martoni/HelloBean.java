@@ -8,11 +8,9 @@ import javax.faces.context.FacesContext;
 import javax.faces.context.ResponseWriter;
 import javax.faces.render.RenderKit;
 import javax.servlet.http.HttpServletResponse;
-import org.xhtmlrenderer.pdf.ITextRenderer;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
-import java.io.StringWriter;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+
+import java.io.*;
 import java.util.Date;
 
 @ManagedBean
@@ -49,7 +47,6 @@ public class HelloBean implements Serializable {
                 }
 
                 String htmlContent = stringWriter.toString();
-                // Flying Saucer igényel egy jól formázott XML/XHTML-t
                 String xhtmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                         "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n" +
                         "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n" +
@@ -68,22 +65,13 @@ public class HelloBean implements Serializable {
                 // (Egyszerűsítve most csak a renderelt HTML-t használjuk)
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ITextRenderer renderer = new ITextRenderer();
-                renderer.setDocumentFromString(xhtmlContent);
-                renderer.layout();
-                renderer.createPDF(baos);
+                PdfRendererBuilder builder = new PdfRendererBuilder();
+                builder.useFastMode();
+                builder.withHtmlContent(xhtmlContent, null);
+                builder.toStream(baos);
+                builder.run();
 
-                byte[] pdfBytes = baos.toByteArray();
-
-                HttpServletResponse response = (HttpServletResponse) externalContext.getResponse();
-                response.reset();
-                response.setContentType("application/pdf");
-                response.setHeader("Content-Disposition", "attachment; filename=\"export.pdf\"");
-                response.setContentLength(pdfBytes.length);
-
-                OutputStream os = response.getOutputStream();
-                os.write(pdfBytes);
-                os.flush();
+                OutputStream os = writePdfToResponse(baos, externalContext);
                 os.close();
 
                 facesContext.responseComplete();
@@ -93,6 +81,27 @@ public class HelloBean implements Serializable {
         }
     }
 
+    /**
+     * Writes PDF data to HTTP response stream
+     */
+    private static OutputStream writePdfToResponse(ByteArrayOutputStream baos, ExternalContext externalContext) throws IOException {
+        byte[] pdfBytes = baos.toByteArray();
+
+        HttpServletResponse response = (HttpServletResponse) externalContext.getResponse();
+        response.reset();
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=\"export.pdf\"");
+        response.setContentLength(pdfBytes.length);
+
+        OutputStream os = response.getOutputStream();
+        os.write(pdfBytes);
+        os.flush();
+        return os;
+    }
+
+    /**
+     * Recursively searches a component tree for matching ID
+     */
     private UIComponent findComponent(UIComponent parent, String id) {
         if (id.equals(parent.getId())) {
             return parent;

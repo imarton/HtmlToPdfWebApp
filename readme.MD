@@ -1,20 +1,19 @@
 # XHTML-ből PDF generálás
-## flying-saucer-pdf-openpdf library
-A flying-saucer egy jól bevált megoldás a HTML + CSS → PDF konverzióra.
+## OpenHTMLtoPDF library
+Az OpenHTMLtoPDF egy modern megoldás a HTML + CSS → PDF konverzióra, amely az Apache PDFBox-ra épül.
 Jelen példa Java-ból, Tomcat + JSF környezetre épül. 
 
 ```
 HTML + CSS
 ↓
-Flying Saucer (renderer)
+OpenHTMLtoPDF (renderer)
 ↓
-OpenPDF (PDF motor)
+Apache PDFBox (PDF motor)
 ↓
 PDF fájl
 ```
 
 ## Elv
-**Flying Saucer**: Egy XHTML/CSS 2.1 renderer Java-ban  
-**OpenPDF**: Az iText 4 open-source forkja → stabil, jogilag tiszta  
-A flying-saucer-pdf-openpdf modul a kettőt köti össze.
+**OpenHTMLtoPDF**: Egy XHTML/CSS renderer Java-ban, amely támogatja a modernebb CSS szabványokat is.
+**Apache PDFBox**: Egy széles körben használt nyílt forráskódú Java könyvtár PDF dokumentumok kezeléséhez.
 
