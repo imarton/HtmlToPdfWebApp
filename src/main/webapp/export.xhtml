@@ -18,24 +18,8 @@
             </div>
             <div class="card-body">
                 <h:form>
-                    <p class="lead">A szerver időpontja: <span class="badge bg-secondary"><h:outputText value="#{helloBean.currentTime}" /></span></p>
-                    <h:commandButton value="Frissítés" styleClass="btn btn-success mb-3" />
+                    <h:commandButton value="PDF Export" action="#{helloBean.buildPdfExport()}" styleClass="btn btn-primary mb-3" />
 
-                    <h:panelGroup id="forPdfExport" layout="block">
-                        <h3 class="mb-3">Számítógép elemek</h3>
-                        <p:dataTable value="#{pcBean.pcElements}" var="pc" styleClass="table table-striped">
-                            <p:column headerText="Név">
-                                <h:outputText value="#{pc.name}"/>
-                            </p:column>
-                            <p:column headerText="Típus">
-                                <h:outputText value="#{pc.type}"/>
-                            </p:column>
-                            <p:column headerText="Ár (Ft)">
-                                <h:outputText value="#{pc.price}">
-                                    <f:convertNumber pattern="#,###"/>
-                                </h:outputText>
-                            </p:column>
-                        </p:dataTable></h:panelGroup>
                 </h:form>
             </div>
             <div class="card-footer text-muted text-center">

@@ -26,56 +26,53 @@ public class HelloBean implements Serializable {
         ExternalContext externalContext = facesContext.getExternalContext();
 
         try {
-            UIComponent component = facesContext.getViewRoot().findComponent("forPdfExport");
-            if (component == null) {
-                // Megpróbáljuk megkeresni rekurzívan ha a findComponent nem találja meg közvetlenül (pl. form-on belül van)
-                component = findComponent(facesContext.getViewRoot(), "forPdfExport");
+            // Mindig az index.xhtml-t akarjuk exportálni
+            String viewId = "/index.xhtml";
+            javax.faces.application.ViewHandler viewHandler = facesContext.getApplication().getViewHandler();
+            javax.faces.component.UIViewRoot viewRoot = viewHandler.createView(facesContext, viewId);
+
+            // Mentjük az eredeti nézetet, majd beállítjuk az újat
+            javax.faces.component.UIViewRoot originalView = facesContext.getViewRoot();
+            facesContext.setViewRoot(viewRoot);
+
+            // FONTOS: A komponensfa felépítése (Build View), különben üres lesz a kimenet
+            facesContext.getAttributes().put("javax.faces.IS_BUILDING_INITIAL_STATE", Boolean.TRUE);
+            viewHandler.getViewDeclarationLanguage(facesContext, viewId).buildView(facesContext, viewRoot);
+            facesContext.getAttributes().remove("javax.faces.IS_BUILDING_INITIAL_STATE");
+
+            // 2. Renderelés StringWriter-be
+            StringWriter stringWriter = new StringWriter();
+            RenderKit renderKit = facesContext.getRenderKit();
+            ResponseWriter writer = renderKit.createResponseWriter(stringWriter, "text/html", "UTF-8");
+            facesContext.setResponseWriter(writer);
+
+            try {
+                viewRoot.encodeAll(facesContext);
+            } finally {
+                facesContext.setViewRoot(originalView); // Visszaállítjuk az eredeti nézetet
             }
 
-            if (component != null) {
-                StringWriter stringWriter = new StringWriter();
-                ResponseWriter originalWriter = facesContext.getResponseWriter();
+            String xhtmlContent = stringWriter.toString();
 
-                RenderKit renderKit = facesContext.getRenderKit();
-                ResponseWriter writer = renderKit.createResponseWriter(stringWriter, "text/html", "UTF-8");
-                facesContext.setResponseWriter(writer);
+            // 3. Tisztítás:
+            // A Bootstrap script tagek és a nem lezárt meta tagek gyakran hibát okoznak.
+            xhtmlContent = cleanForXhtml(xhtmlContent);
+            //System.out.println(xhtmlContent);
 
-                component.encodeAll(facesContext);
+            // 4. PDF generálás
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+            builder.withHtmlContent(xhtmlContent, null);
+            builder.toStream(baos);
+            builder.run();
 
-                if (originalWriter != null) {
-                    facesContext.setResponseWriter(originalWriter);
-                }
+            // 5. HTTP Válasz kiküldése
+            OutputStream os = writePdfToResponse(baos, externalContext);
+            os.close();
 
-                String htmlContent = stringWriter.toString();
-                String xhtmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n" +
-                        "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n" +
-                        "<head><title>PDF Export</title>\n" +
-                        "<style>\n" +
-                        "body { font-family: 'Arial', sans-serif; }\n" +
-                        "table { width: 100%; border-collapse: collapse; }\n" +
-                        "th, td { border: 1px solid black; padding: 8px; text-align: left; }\n" +
-                        "th { background-color: #f2f2f2; }\n" +
-                        "</style>\n" +
-                        "</head><body>\n" +
-                        htmlContent +
-                        "</body></html>";
+            facesContext.responseComplete();
 
-                // Tisztítás: PrimeFaces táblázat specifikus dolgok eltávolítása vagy javítása ha szükséges
-                // (Egyszerűsítve most csak a renderelt HTML-t használjuk)
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PdfRendererBuilder builder = new PdfRendererBuilder();
-                builder.useFastMode();
-                builder.withHtmlContent(xhtmlContent, null);
-                builder.toStream(baos);
-                builder.run();
-
-                OutputStream os = writePdfToResponse(baos, externalContext);
-                os.close();
-
-                facesContext.responseComplete();
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -100,18 +97,15 @@ public class HelloBean implements Serializable {
     }
 
     /**
-     * Recursively searches a component tree for matching ID
+     * Segédmetódus a JSF kimenet XHTML-kompatibilissé tételéhez.
      */
-    private UIComponent findComponent(UIComponent parent, String id) {
-        if (id.equals(parent.getId())) {
-            return parent;
-        }
-        for (UIComponent child : parent.getChildren()) {
-            UIComponent found = findComponent(child, id);
-            if (found != null) {
-                return found;
-            }
-        }
-        return null;
+    private String cleanForXhtml(String html) {
+        // Eltávolítjuk a szkripteket, mert a PDF-ben nem futnak és gyakran hibás XML-t okoznak
+        String cleaned = html.replaceAll("(?s)<script.*?>.*?</script>", "");
+        // Biztosítjuk a HTML5 meta charset lezárását, ha hiányozna
+        cleaned = cleaned.replaceAll("<meta charset=\"utf-8\">", "<meta charset=\"utf-8\" />");
+        // PrimeFaces specifikus: néha maradhatnak benne entitások, amiket a parser nem szeret
+        cleaned = cleaned.replace("&nbsp;", "&#160;");
+        return cleaned;
     }
 }
