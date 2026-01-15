@@ -1,4 +1,7 @@
 # XHTML-ből PDF generálás
+A projectben célja egy PDF generáló funkció készítése, amely egy dinamikusan készült JSF oldal tartalmát PDF fájlbe menti 
+és visszaadja a felhasználónak. 
+
 ## flying-saucer-pdf-openpdf library
 A flying-saucer egy jól bevált megoldás a HTML + CSS → PDF konverzióra.
 Jelen példa Java-ból, Tomcat + JSF környezetre épül. 
