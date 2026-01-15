@@ -5,4 +5,12 @@
     xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_2.xsd"
     version="2.2">
 
+    <application>
+        <resource-library-contracts>
+            <contract-mapping>
+                <url-pattern>*</url-pattern>
+                <contracts>default</contracts>
+            </contract-mapping>
+        </resource-library-contracts>
+    </application>
 </faces-config>
