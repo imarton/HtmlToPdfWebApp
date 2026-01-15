@@ -9,7 +9,7 @@
             <h:form>
                 <p class="lead">A szerver időpontja: <span class="badge bg-secondary"><h:outputText value="#{helloBean.currentTime}" /></span></p>
                 <h:commandButton value="Frissítés" styleClass="btn btn-success mb-3" />
-                <h:commandButton value="PDF Export" action="#{helloBean.buildPdfExport()}" styleClass="btn btn-primary mb-3" />
+                <h:commandButton value="PDF Export" action="#{helloBean.buildPdfExport}" styleClass="btn btn-primary mb-3 ms-2" />
 
                 <h:panelGroup id="forPdfExport" layout="block">
                     <h3 class="mb-3">Számítógép elemek</h3>

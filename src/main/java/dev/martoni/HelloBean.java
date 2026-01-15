@@ -28,11 +28,7 @@ public class HelloBean implements Serializable {
         ExternalContext externalContext = facesContext.getExternalContext();
 
         try {
-            UIComponent component = facesContext.getViewRoot().findComponent("forPdfExport");
-            if (component == null) {
-                // Megpróbáljuk megkeresni rekurzívan ha a findComponent nem találja meg közvetlenül (pl. form-on belül van)
-                component = findComponent(facesContext.getViewRoot(), "forPdfExport");
-            }
+            UIComponent component = facesContext.getViewRoot();
 
             if (component != null) {
                 StringWriter stringWriter = new StringWriter();
@@ -48,25 +44,12 @@ public class HelloBean implements Serializable {
                     facesContext.setResponseWriter(originalWriter);
                 }
 
-                String htmlContent = stringWriter.toString();
-                // Flying Saucer igényel egy jól formázott XML/XHTML-t
-                String xhtmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n" +
-                        "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n" +
-                        "<head><title>PDF Export</title>\n" +
-                        "<style>\n" +
-                        "body { font-family: 'Arial', sans-serif; }\n" +
-                        "table { width: 100%; border-collapse: collapse; }\n" +
-                        "th, td { border: 1px solid black; padding: 8px; text-align: left; }\n" +
-                        "th { background-color: #f2f2f2; }\n" +
-                        "</style>\n" +
-                        "</head><body>\n" +
-                        htmlContent +
-                        "</body></html>";
+                String xhtmlContent = stringWriter.toString();
 
-                // Tisztítás: PrimeFaces táblázat specifikus dolgok eltávolítása vagy javítása ha szükséges
-                // (Egyszerűsítve most csak a renderelt HTML-t használjuk)
-
+                // Flying Saucernek néha szüksége van a doctype-ra és a korrekt XHTML formátumra
+                // Ha a JSF kimenete nem tartalmazza a doctype-ot, hozzáadhatjuk, 
+                // de a getViewRoot renderelésekor általában benne van ha a template-ben benne van.
+                
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ITextRenderer renderer = new ITextRenderer();
                 renderer.setDocumentFromString(xhtmlContent);
@@ -93,16 +76,4 @@ public class HelloBean implements Serializable {
         }
     }
 
-    private UIComponent findComponent(UIComponent parent, String id) {
-        if (id.equals(parent.getId())) {
-            return parent;
-        }
-        for (UIComponent child : parent.getChildren()) {
-            UIComponent found = findComponent(child, id);
-            if (found != null) {
-                return found;
-            }
-        }
-        return null;
-    }
 }
